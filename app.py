@@ -5,58 +5,41 @@ import pickle
 import requests
 
 # --------- parameters ---------
-FILE_ID   = "1cmeXnYWta9mFAXQGav3mLxMWg4LFBugu"
-FILE_URL  = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
+FILE_URL  = "https://www.dropbox.com/scl/fi/qe5ypv60xu1awlznky65j/similarity.pkl?rlkey=02i13m2udeur3fp0r17lhjsh8&e=1&dl=1"
 LOCAL_PKL = "similarity.pkl"
-
-
-def download_from_drive(file_id, destination):
-    def get_confirm_token(response):
-        for key, value in response.cookies.items():
-            if key.startswith("download_warning"):
-                return value
-        return None
-
-    URL = "https://docs.google.com/uc?export=download"
-    session = requests.Session()
-
-    response = session.get(URL, params={'id': file_id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {'id': file_id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
-
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(32 * 1024):
-            if chunk:
-                f.write(chunk)
-
 
 # --------- download similarity.pkl if absent ---------
 if not os.path.exists(LOCAL_PKL):
-    with st.spinner("Downloading similarity matrix…"):
+    with st.spinner("Downloading similarity matrix from Dropbox…"):
         try:
-            download_from_drive("1cmeXnYWta9mFAXQGav3mLxMWg4LFBugu", LOCAL_PKL)
+            response = requests.get(FILE_URL)
+            response.raise_for_status()  # Raise error if download fails
+            with open(LOCAL_PKL, "wb") as f:
+                f.write(response.content)
         except Exception as e:
-            st.error("Download failed: " + str(e)); st.stop()
-            
+            st.error(f"Download failed: {e}")
+            st.stop()
+
 # --------- load data ---------
 try:
-    similarity = pickle.load(open(LOCAL_PKL, "rb"))
+    with open(LOCAL_PKL, "rb") as f:
+        similarity = pickle.load(f)
 except Exception as e:
-    st.error(f"Couldn't load similarity matrix: {e}"); st.stop()
+    st.error(f"Couldn't load similarity matrix: {e}")
+    st.stop()
 
 movies_dict = pickle.load(open("movies_dict.pkl", "rb"))
-movies       = pd.DataFrame(movies_dict)
+movies = pd.DataFrame(movies_dict)
 
 # --------- TMDB token ---------
 TMDB_TOKEN = st.secrets.get("TMDB_TOKEN", "YOUR_TOKEN_HERE")
 
 def fetch_poster(movie_id: int) -> str:
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?language=en-US"
-    headers = {"accept": "application/json",
-               "Authorization": f"Bearer {TMDB_TOKEN}"}
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {TMDB_TOKEN}"
+    }
     resp = requests.get(url, headers=headers)
     if resp.status_code != 200:
         return "https://via.placeholder.com/300x450?text=No+Poster"
@@ -65,11 +48,11 @@ def fetch_poster(movie_id: int) -> str:
            else "https://via.placeholder.com/300x450?text=No+Poster"
 
 def recommend(movie_title: str):
-    idx        = movies[movies["title"] == movie_title].index[0]
-    distances  = similarity[idx]
-    top5       = sorted(enumerate(distances), key=lambda x: x[1], reverse=True)[1:6]
-    titles     = [movies.iloc[i].title        for i, _ in top5]
-    posters    = [fetch_poster(movies.iloc[i].movie_id) for i, _ in top5]
+    idx = movies[movies["title"] == movie_title].index[0]
+    distances = similarity[idx]
+    top5 = sorted(enumerate(distances), key=lambda x: x[1], reverse=True)[1:6]
+    titles = [movies.iloc[i].title for i, _ in top5]
+    posters = [fetch_poster(movies.iloc[i].movie_id) for i, _ in top5]
     return titles, posters
 
 # --------- UI ---------
