@@ -9,23 +9,43 @@ FILE_ID   = "1cmeXnYWta9mFAXQGav3mLxMWg4LFBugu"
 FILE_URL  = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
 LOCAL_PKL = "similarity.pkl"
 
+
+def download_from_drive(file_id, destination):
+    def get_confirm_token(response):
+        for key, value in response.cookies.items():
+            if key.startswith("download_warning"):
+                return value
+        return None
+
+    URL = "https://docs.google.com/uc?export=download"
+    session = requests.Session()
+
+    response = session.get(URL, params={'id': file_id}, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = {'id': file_id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(32 * 1024):
+            if chunk:
+                f.write(chunk)
+
+
 # --------- download similarity.pkl if absent ---------
 if not os.path.exists(LOCAL_PKL):
     with st.spinner("Downloading similarity matrix…"):
-        r = requests.get(FILE_URL, stream=True)
-        if r.status_code == 200:
-            with open(LOCAL_PKL, "wb") as f:
-                for chunk in r.iter_content(1024 * 1024):  # 1 MB chunks
-                    if chunk:
-                        f.write(chunk)
-        else:
-            st.error(f"Download failed (HTTP {r.status_code})."); st.stop()
-
+        try:
+            download_from_drive("1cmeXnYWta9mFAXQGav3mLxMWg4LFBugu", LOCAL_PKL)
+        except Exception as e:
+            st.error("Download failed: " + str(e)); st.stop()
+            
 # --------- load data ---------
 try:
     similarity = pickle.load(open(LOCAL_PKL, "rb"))
 except Exception as e:
-    st.error(f"Couldn’t load similarity matrix: {e}"); st.stop()
+    st.error(f"Couldn't load similarity matrix: {e}"); st.stop()
 
 movies_dict = pickle.load(open("movies_dict.pkl", "rb"))
 movies       = pd.DataFrame(movies_dict)
