@@ -60,12 +60,12 @@ st.title("🎬 Movie Recommender System")
 
 selected_movie = st.selectbox("Select a movie", movies["title"].values, index=None)
 
-if st.button("Recommend") and selected_movie:
+if st.button("Recommend",key="recommend_button") and selected_movie:
     titles, posters = recommend(selected_movie)
     cols = st.columns(5)
     for col, t, p in zip(cols, titles, posters):
         with col:
             st.image(p)
             st.caption(t)
-elif st.button("Recommend"):
+elif st.button("Recommend",key="warn_button"):
     st.warning("Please choose a movie first.")

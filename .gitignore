@@ -3,3 +3,5 @@ venv/
 
 # Ignore large similarity file
 similarity.pkl
+
+.streamlit/secrets.toml
