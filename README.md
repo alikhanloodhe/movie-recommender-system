@@ -60,6 +60,7 @@ pip install -r requirements.txt
 streamlit run app.py
 
 ## 📂 Project Structure
+```
 movie-recommender-system/
 │
 ├── data/                   # Dataset (if included)
@@ -69,6 +70,7 @@ movie-recommender-system/
 ├── README.md               # Project documentation
 └── notebooks/              # Jupyter notebooks for exploration & preprocessing
 
+```
 ## 📈 Results
 
 Recommends movies based on similarity score using Count Vectorizer + Cosine Similarity.
