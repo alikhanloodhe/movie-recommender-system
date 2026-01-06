@@ -50,7 +50,7 @@ Customizable Recommendations: Adjust the number of movies recommended as per you
 
 ## 🚀 How to Run
 1️⃣ Clone the Repository
-git clone https://github.com/yourusername/movie-recommender-system.git
+git clone https://github.com/alikhanloodhe/movie-recommender-system.git
 cd movie-recommender-system
 
 2️⃣ Install Dependencies
